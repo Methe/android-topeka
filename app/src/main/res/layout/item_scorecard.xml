@@ -15,14 +15,15 @@
   -->
 
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:tools="http://schemas.android.com/tools"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@null"
-        android:orientation="horizontal"
-        android:paddingBottom="@dimen/spacing_normal"
-        android:paddingTop="@dimen/spacing_normal"
-        tools:ignore="Overdraw">
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                android:background="@null"
+                android:orientation="horizontal"
+                android:paddingBottom="@dimen/spacing_normal"
+                android:paddingTop="@dimen/spacing_normal"
+                tools:ignore="Overdraw">
 
     <ImageView
             android:id="@+id/solved_state"
@@ -34,7 +35,7 @@
             android:layout_marginEnd="@dimen/spacing_double"
             android:layout_marginStart="@dimen/spacing_double"
             android:contentDescription="@null"
-            android:src="@drawable/ic_tick" />
+            app:srcCompat="@drawable/ic_tick" />
 
     <LinearLayout
             android:layout_width="match_parent"

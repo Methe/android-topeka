@@ -14,6 +14,20 @@
  * limitations under the License.
  */
 
+/**
+ * Otimizando Imagens!
+ *
+ * PngQuant - {@literal https://pngquant.org/}
+ *
+ * ZopfliPng -
+ * {@literal https://github.com/google/zopfli}
+ * {@literal http://edupertuis.net/2016/01/12/playing-with-zopfli.html}
+ *
+ * Depois de instalar os dois, pelo terminal, vá até a pasta src do seu projeto e rode
+ * 1 - pngquant --skip-if-larger --verbose --quality=65-80 -f --ext '.png' ** /res/** /*.png (sem os espaços entre os * e os /
+ * 2 - for file in $(find . -name \*.png -print); do zopflipng -m -y $file $file; done (esse vai demorar)
+ */
+
 apply plugin: 'com.android.application'
 apply plugin: 'com.getkeepsafe.dexcount'
 
@@ -32,9 +46,49 @@ android {
     versionCode 1
     versionName "1.0"
     testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
+
+    /**
+     * {@literal https://medium.com/@wkalicinski/smallerapk-part-6-image-optimization-zopfli-webp-4c462955647d#.27ka9tki5}
+     *
+     * Usar isso implica em poder usar VectorDrawables em versões pré-lollipop
+     * Para isso temos que alterar todas as flags de android:src para app:srcCompat dos arquivos de
+       layout
+     *
+     * PS.: Cuidado com Views Customizadas
+     */
+    vectorDrawables.useSupportLibrary = true
+
+    /**
+     * {@literal https://medium.com/google-developers/smallerapk-part-3-removing-unused-resources-1511f9e3f761#.cup8vi748}
+     *
+     * Algumas dependências vem com assets traduzidos em linguagens que não serão usadas no seu App
+     * Esses assets podem ocupar um espaço significativo no APK
+     * Essa opção filtra esses assets e mantém no APK apenas as traduções que você deseja
+     */
+    resConfigs "en"
   }
 
   buildTypes {
+    debug {
+      /**
+       * {@literal http://tools.android.com/tech-docs/new-build-system/resource-shrinking}
+       * {@literal https://medium.com/google-developers/smallerapk-part-2-minifying-code-554560d2ed40#.7v86zqdd5}
+       * {@literal https://medium.com/google-developers/smallerapk-part-3-removing-unused-resources-1511f9e3f761#.cup8vi748}
+       * {@literal http://cyrilmottier.com/2014/08/26/putting-your-apks-on-diet/}
+       *
+       * A opção de minify vai retirar trechos de código que nunca são utilizados (Isso ajuda bastante no DexCount)
+       * A opção de ShrinkResources vai retirar resources não utilizados. Aumenta o tempo de build
+       * (varia de acordo com a quantidade de resources existentes no projeto) mas ajuda no tamanho
+       * final do APK, acho que legal usar isso apenas no BuildType de Homolog ou Release
+       *
+       * Cuidado com resources duplicados!
+       * Ex: Asset de setinha
+       * É possível ter apenas um asset de setinha e possuir xmls de bitmap que rotacione a mesma
+         setinha nas outras direções
+       */
+      minifyEnabled true
+      shrinkResources true
+    }
     release {
       minifyEnabled true
     }
@@ -42,6 +96,93 @@ android {
 
   packagingOptions {
     exclude 'LICENSE.txt'
+  }
+
+  /**
+   * {@literal https://developer.android.com/training/multiple-apks/index.html}
+   * {@literal https://developer.android.com/training/multiple-apks/api.html}
+   * {@literal https://developer.android.com/training/multiple-apks/screensize.html}
+   * {@literal https://developer.android.com/training/multiple-apks/texture.html}
+   * {@literal https://developer.android.com/training/multiple-apks/multiple.html}
+   *
+   * {@literal https://developer.android.com/google/play/publishing/multiple-apks.html}
+   * {@literal http://tools.android.com/tech-docs/new-build-system/user-guide/apk-splits}
+   * {@literal https://medium.com/@wkalicinski/smallerapk-part-4-multi-apk-through-abi-and-density-splits-477083989006#.3r7s0r86o}
+   * {@literal http://blog.nimbledroid.com/2016/06/15/app-diets-not-a-fad.html?utm_source=googleplus&utm_medium=referral&utm_campaign=app-diet}
+   *
+   * Aqui está uma das magias mais legais do Gradle!
+   * Isso divide o APK final em vários outros, filtrando resources por densidade e/ou por ABI!
+   *
+   * Prós:
+   * Seu APK fica menor e o usuário recebe um apk específico para o device dele!
+   *
+   * Contras:
+   * É necessário manter N APKs em produção no Google Play
+   * A lógica é simples, o Google play entrega para o usuário, a versão compatível com o aparelho
+     dele, com o maior versionCode, então temos que pensar numa lógica para entregarmos sempre a
+     versão correta para ele
+   *
+   * É possível fazer Split por densidade e por ABI utilizando product Flavors, mas não gosto muito
+     dessa ideia. Seria uma ideia interessante usar flavor para diferenciar o APK de Tablets,
+     Smathphones e TVs por exemplo, ou até para diferenciar o código de versões antigas do Android
+   */
+  splits {
+    density {
+      enable project.hasProperty('split')
+      exclude "ldpi", "tvdpi"
+      compatibleScreens 'small', 'normal', 'large', 'xlarge'
+    }
+
+    abi {
+      enable false
+      reset()
+      include 'x86', 'armeabi-v7a', 'mips'
+    }
+  }
+
+  /**
+   * {@literal https://medium.com/@wkalicinski/smallerapk-part-6-image-optimization-zopfli-webp-4c462955647d#.27ka9tki5}
+   *
+   * Por default, essa flag vem habilitada
+   * Quando habilitada, em tempo de compilação, o Android Studio tenta otimizar as imagens que estão
+     no projeto
+   * Quando o tratamento de otização já foi feito, algumas vezes ao tentar aplicá-lo novamente
+     aumenta o tamanho do arquivo
+   * Então quando suas imagens já estão otimizadas, é melhor desabilitar essa opção para evitar um
+     aumento do tamanho do APK de maneira desnecessária
+   * E o Build tende a ficar mais rápido \o/
+   */
+  aaptOptions {
+    cruncherEnabled = false
+  }
+}
+
+/**
+ * {@literal https://medium.com/@wkalicinski/smallerapk-part-4-multi-apk-through-abi-and-density-splits-477083989006#.40z0h572w}
+ * {@literal https://developer.android.com/google/play/publishing/multiple-apks.html#Rules}
+ *
+ * Para poder trabalhar com Splits por Density e/ou por ABI temos que gerar APKs com VersionCodes
+   diferentes
+ * Sendo que o Universal APK tem que possuir o menor VersionCode, porque o Google Play entrega o APK
+   compatível com o device, com o maior VersionCode
+ * Sendo assim, o código abaixo sobrescreve o VersionCode das versões geradas com a seguinte regras
+   (DensityMultiplier * 1000000 + VersionCode)
+ * Ex:
+ * Universal - 1
+ * MDPI - 10000001
+ * HDPI - 20000001
+ */
+ext.versionCodes = ['mdpi': 1, 'hdpi': 2, 'xhdpi': 3, 'xxhdpi': 4, 'xxxhdpi': 5].withDefault { 0 }
+
+import com.android.build.OutputFile
+
+android.applicationVariants.all { variant ->
+  if (!project.hasProperty('split')) return
+  variant.outputs.each { output ->
+    output.versionCodeOverride =
+        project.ext.versionCodes.get(output.getFilter(OutputFile.DENSITY)) * 10000000 +
+            android.defaultConfig.versionCode
+    println "Version ${output.getFilter(OutputFile.DENSITY)} configuration will have VersionCode $output.versionCodeOverride"
   }
 }
 
@@ -53,15 +194,36 @@ ext {
   junitVersion = "4.12"
 }
 
+/**
+ * {@literal https://medium.com/google-developers/smallerapk-part-2-minifying-code-554560d2ed40#.1efrsoc4g}
+ *
+ * Verifiquem se existem atualizações e se é possível excluir alguma dependência
+ *
+ * Att,
+ * DexCount
+ */
 dependencies {
-  compile "com.android.support:appcompat-v7:${supportLibVersion}"
-  compile "com.android.support:cardview-v7:${supportLibVersion}"
-  compile "com.android.support:design:${supportLibVersion}"
-  compile "com.android.support:recyclerview-v7:${supportLibVersion}"
+  compile("com.android.support:support-v4:$supportLibVersion") {
+    exclude module: 'support-annotations'
+  }
+  compile("com.android.support:appcompat-v7:$supportLibVersion") {
+    exclude module: 'support-v4'
+  }
+  compile("com.android.support:design:$supportLibVersion") {
+    exclude module: 'support-v4'
+    exclude module: 'appcompat-v7'
+    exclude module: 'recyclerview-v7'
+  }
+  compile("com.android.support:recyclerview-v7:$supportLibVersion") {
+    exclude module: 'support-v4'
+    exclude module: 'support-annotations'
+  }
+  compile("com.android.support:cardview-v7:$supportLibVersion") {
+    exclude module: 'support-annotations'
+  }
   compile "com.android.support.test.espresso:espresso-idling-resource:${espressoVersion}"
 
-  compile("com.facebook.android:facebook-android-sdk:4.14.0")
-
+  //Tests
   testCompile "junit:junit:${junitVersion}"
 
   androidTestCompile("com.android.support.test.espresso:espresso-core:${espressoVersion}") {

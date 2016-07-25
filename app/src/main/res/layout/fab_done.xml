@@ -25,5 +25,5 @@
         android:layout_marginBottom="@dimen/spacing_double"
         android:layout_marginEnd="@dimen/spacing_double"
         android:layout_marginRight="@dimen/spacing_double"
-        android:src="@drawable/ic_tick"
+        app:srcCompat="@drawable/ic_tick"
         app:backgroundTint="@color/topeka_primary" />

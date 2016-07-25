@@ -89,23 +89,9 @@ public class AvatarView extends ImageView implements Checkable {
      */
     @SuppressLint("NewApi")
     public void setAvatar(@DrawableRes int resId) {
-        if (ApiLevelHelper.isAtLeast(Build.VERSION_CODES.LOLLIPOP)) {
+        if (ApiLevelHelper.isAtLeast(Build.VERSION_CODES.LOLLIPOP))
             setClipToOutline(true);
-            setImageResource(resId);
-        } else {
-            setAvatarPreLollipop(resId);
-        }
-    }
-
-    private void setAvatarPreLollipop(@DrawableRes int resId) {
-        Drawable drawable = ResourcesCompat.getDrawable(getResources(), resId,
-                getContext().getTheme());
-        BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
-        @SuppressWarnings("ConstantConditions")
-        RoundedBitmapDrawable roundedDrawable = RoundedBitmapDrawableFactory.create(getResources(),
-                bitmapDrawable.getBitmap());
-        roundedDrawable.setCircular(true);
-        setImageDrawable(roundedDrawable);
+        setImageResource(resId);
     }
 
     @Override
